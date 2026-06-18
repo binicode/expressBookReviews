@@ -105,19 +105,16 @@ public_users.get("/title/:title", async function (req, res) {
   const title = req.params.title;
   
   try {
-    // 1. Fetch the complete books data from your API endpoint
-    const response = await axios.get('http://localhost:5000/books'); 
-    const books = response.data;
+    const response = await axios.get('http://localhost:5000/');
+    const allBooks = response.data;
 
-    // 2. Filter the books matching the title
     let matchingBooks = {};
-    Object.keys(books).forEach((key) => {
-      if (books[key].title.toLowerCase() === title.toLowerCase()) {
-        matchingBooks[key] = books[key];
+    Object.keys(allBooks).forEach((key) => {
+      if (allBooks[key].title.toLowerCase() === title.toLowerCase()) {
+        matchingBooks[key] = allBooks[key];
       }
     });
 
-    // 3. Return results or throw error if empty
     if (Object.keys(matchingBooks).length > 0) {
       return res.status(200).send(JSON.stringify(matchingBooks, null, 4));
     } else {
@@ -125,7 +122,6 @@ public_users.get("/title/:title", async function (req, res) {
     }
 
   } catch (error) {
-    // 4. Handle Axios network errors or 404s
     const errorMessage = error.response?.data?.message || error.message || "An error occurred";
     return res.status(error.response?.status || 500).send(JSON.stringify({ message: errorMessage }, null, 4));
   }
