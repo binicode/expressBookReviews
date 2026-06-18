@@ -1,6 +1,7 @@
 const express = require("express");
 const books = require("./booksdb.js");
 const { isValid, users } = require("./auth_users.js");
+const axios = require("axios");
 
 const public_users = express.Router();
 
@@ -102,28 +103,34 @@ public_users.get("/author/:author", async function (req, res) {
 // 5. Get all books based on title
 public_users.get("/title/:title", async function (req, res) {
   const title = req.params.title;
+  
   try {
-    const fetchBooksByTitle = (titleName) =>
-      new Promise((resolve, reject) => {
-        let matchingBooks = {};
-        Object.keys(books).forEach((key) => {
-          if (books[key].title.toLowerCase() === titleName.toLowerCase()) {
-            matchingBooks[key] = books[key];
-          }
-        });
-        if (Object.keys(matchingBooks).length > 0) {
-          resolve(matchingBooks);
-        } else {
-          reject("No books found with this title");
-        }
-      });
+    // 1. Fetch the complete books data from your API endpoint
+    const response = await axios.get('http://localhost:5000/books'); 
+    const books = response.data;
 
-    const matchedResults = await fetchBooksByTitle(title);
-    return res.status(200).send(JSON.stringify(matchedResults, null, 4));
+    // 2. Filter the books matching the title
+    let matchingBooks = {};
+    Object.keys(books).forEach((key) => {
+      if (books[key].title.toLowerCase() === title.toLowerCase()) {
+        matchingBooks[key] = books[key];
+      }
+    });
+
+    // 3. Return results or throw error if empty
+    if (Object.keys(matchingBooks).length > 0) {
+      return res.status(200).send(JSON.stringify(matchingBooks, null, 4));
+    } else {
+      return res.status(404).send(JSON.stringify({ message: "No books found with this title" }, null, 4));
+    }
+
   } catch (error) {
-    return res.status(404).send(JSON.stringify({ message: error }, null, 4));
+    // 4. Handle Axios network errors or 404s
+    const errorMessage = error.response?.data?.message || error.message || "An error occurred";
+    return res.status(error.response?.status || 500).send(JSON.stringify({ message: errorMessage }, null, 4));
   }
 });
+
 
 // 6. Get book review
 public_users.get("/review/:isbn", async function (req, res) {
